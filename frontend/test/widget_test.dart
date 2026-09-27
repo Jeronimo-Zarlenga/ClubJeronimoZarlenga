@@ -1,30 +1,58 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:club_jeronimo_zarlenga/main.dart';
+import 'package:club_jeronimo_zarlenga/screens/club_app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('shows the club access screen', (tester) async {
+    await tester.pumpWidget(const ClubApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('INICIAR SESIÓN'), findsOneWidget);
+    expect(find.text('Explorar sedes como invitado'), findsOneWidget);
+    final context = tester.element(find.byType(Scaffold).first);
+    expect(Localizations.localeOf(context), const Locale('es', 'AR'));
+    expect(
+      MaterialLocalizations.of(context).formatCompactDate(DateTime(2026, 9, 7)),
+      '7/9/2026',
+    );
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('does not expose a client-controlled admin role', (tester) async {
+    await tester.pumpWidget(const ClubApp());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Administrador'), findsNothing);
+    expect(
+      find.textContaining('Firebase todavía no está configurado'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('allows typing into login fields before Firebase is configured', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const ClubApp());
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'jugador@example.com');
+    await tester.enterText(fields.at(1), 'password123');
+
+    expect(find.text('jugador@example.com'), findsOneWidget);
+  });
+
+  testWidgets('opens an editable registration form before Firebase setup', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const ClubApp());
+    final openRegister = find.byKey(const ValueKey('open-register'));
+    await tester.ensureVisible(openRegister);
+    await tester.tap(openRegister);
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextFormField);
+    expect(fields, findsNWidgets(5));
+    await tester.enterText(fields.at(0), 'Ana');
+    await tester.enterText(fields.at(1), 'Deportista');
+    await tester.enterText(fields.at(2), 'ana@example.com');
+
+    expect(find.text('ana@example.com'), findsOneWidget);
   });
 }
