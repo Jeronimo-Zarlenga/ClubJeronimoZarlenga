@@ -15,7 +15,7 @@ class Usuario(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     nombre = Column(String, nullable=False)
     apellido = Column(String, nullable=False)
-    fecha_nacimiento = Column(Date, nullable=True)
+    fecha_nacimiento = Column(Date, nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=utc_now_naive)
 

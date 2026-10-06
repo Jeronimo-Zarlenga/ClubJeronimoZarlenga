@@ -9,7 +9,8 @@ from sqlalchemy.pool import StaticPool
 import models
 from database import Base, get_db
 from main import app
-from security import current_user, verify_firebase_signup_token
+from security import current_user, require_admin, verify_firebase_signup_token
+from schemas import UsuarioResponse
 
 
 class ApiContractTests(unittest.TestCase):
@@ -28,12 +29,14 @@ class ApiContractTests(unittest.TestCase):
                 email="player@example.com",
                 nombre="Jugador",
                 apellido="Uno",
+                fecha_nacimiento=date(1995, 8, 12),
             )
             self.other_user = models.Usuario(
                 firebase_uid="other-user-uid",
                 email="other@example.com",
                 nombre="Jugador",
                 apellido="Dos",
+                fecha_nacimiento=date(1996, 8, 12),
             )
             db.add_all([self.user, self.other_user])
             db.flush()
@@ -179,6 +182,64 @@ class ApiContractTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["email"], "player@example.com")
         self.assertEqual(response.json()["nombre"], "Nombre actualizado")
+
+    def test_profile_requires_birth_date(self):
+        response = self.client.put(
+            "/usuarios/me",
+            json={
+                "nombre": "Jugador",
+                "apellido": "Uno",
+                "fecha_nacimiento": None,
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_profile_response_supports_legacy_missing_birth_date(self):
+        response = UsuarioResponse(
+            id=1,
+            nombre="Jugador",
+            apellido="Antiguo",
+            email="legacy@example.com",
+            fecha_nacimiento=None,
+            created_at=datetime.now(),
+        )
+
+        self.assertIsNone(response.fecha_nacimiento)
+
+    def test_space_name_uses_required_compound_format(self):
+        app.dependency_overrides[require_admin] = lambda: {}
+        response = self.client.post(
+            "/espacios/",
+            json={
+                "sede_id": self.venue_id,
+                "tipo": "Paddle",
+                "numero": 2,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()["nombre_compuesto"],
+            "Sede_Test_Calle_123_Paddle_2",
+        )
+
+    def test_space_name_normalizes_multiword_sport_types(self):
+        app.dependency_overrides[require_admin] = lambda: {}
+        response = self.client.post(
+            "/espacios/",
+            json={
+                "sede_id": self.venue_id,
+                "tipo": "Fútbol 5",
+                "numero": 3,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()["nombre_compuesto"],
+            "Sede_Test_Calle_123_Fútbol_5_3",
+        )
 
     def test_firebase_signup_persists_profile_and_me_reads_it(self):
         app.dependency_overrides[verify_firebase_signup_token] = lambda: {

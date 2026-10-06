@@ -1,4 +1,5 @@
 import os
+import re
 from contextlib import asynccontextmanager
 from datetime import date, datetime, time, timedelta
 from typing import Annotated
@@ -58,7 +59,18 @@ def _not_found(entity: str) -> HTTPException:
 
 
 def _space_name(venue: models.Sede, space_type: str, number: int) -> str:
-    return "_".join((venue.nombre, venue.direccion, space_type, str(number))).replace(" ", "_")
+    if number < 1:
+        raise HTTPException(status_code=422, detail="El número de cancha debe ser al menos 1.")
+    normalized_type = space_type.strip()
+    if not normalized_type or not all(
+        character.isalnum() or character in "_ " for character in normalized_type
+    ):
+        raise HTTPException(status_code=422, detail="El tipo de deporte contiene caracteres no permitidos.")
+    parts = [venue.nombre, venue.direccion, normalized_type, str(number)]
+    name = re.sub(r"[^\w]+", "_", "_".join(parts), flags=re.UNICODE).strip("_")
+    if not name or not re.fullmatch(r"[\w]+(?:_[\w]+)+", name, flags=re.UNICODE):
+        raise HTTPException(status_code=422, detail="El nombre compuesto no cumple el formato requerido.")
+    return name
 
 
 def _get_space(db: Session, space_id: int) -> models.EspacioDeportivo:

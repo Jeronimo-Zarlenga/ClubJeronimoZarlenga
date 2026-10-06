@@ -1,26 +1,27 @@
-from pydantic import BaseModel, EmailStr
 from datetime import date, time, datetime
 from typing import Optional
 
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
 # --- SCHEMAS DE USUARIO ---
 class UsuarioBase(BaseModel):
-    nombre: str
-    apellido: str
+    nombre: str = Field(min_length=1, max_length=100)
+    apellido: str = Field(min_length=1, max_length=100)
     email: EmailStr
-    fecha_nacimiento: Optional[date] = None
-
-class UsuarioCreate(UsuarioBase):
     fecha_nacimiento: date
 
+class UsuarioCreate(UsuarioBase):
+    pass
 
 class UsuarioUpdate(BaseModel):
-    nombre: str
-    apellido: str
+    nombre: str = Field(min_length=1, max_length=100)
+    apellido: str = Field(min_length=1, max_length=100)
     fecha_nacimiento: date
 
 class UsuarioResponse(UsuarioBase):
     id: int
     created_at: datetime
+    fecha_nacimiento: Optional[date] = None
     is_admin: bool = False
 
     class Config:
@@ -45,14 +46,24 @@ class SedeResponse(SedeBase):
 # --- SCHEMAS DE ESPACIO DEPORTIVO ---
 class EspacioDeportivoBase(BaseModel):
     sede_id: int
-    tipo: str  # Fútbol, Paddle, Básquet, etc.
-    numero: int  # Número de cancha para construir el nombre compuesto
+    tipo: str = Field(min_length=1, max_length=80)
+    numero: int = Field(ge=1)
+
+    @field_validator("tipo")
+    @classmethod
+    def validar_tipo(cls, value: str) -> str:
+        return value.strip()
 
 
 class EspacioDeportivoUpdate(BaseModel):
     sede_id: int
-    tipo: str
-    numero: int
+    tipo: str = Field(min_length=1, max_length=80)
+    numero: int = Field(ge=1)
+
+    @field_validator("tipo")
+    @classmethod
+    def validar_tipo(cls, value: str) -> str:
+        return value.strip()
 
 class EspacioDeportivoResponse(BaseModel):
     id: int
