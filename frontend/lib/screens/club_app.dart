@@ -242,7 +242,7 @@ class _AccessScreenState extends State<AccessScreen> {
     } on AuthException catch (error) {
       if (mounted) setState(() => _message = error.message);
     } on ApiException catch (error) {
-      if (mounted) setState(() => _message = error.message);
+      if (mounted) setState(() => _message = error.userMessage);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -266,6 +266,8 @@ class _AccessScreenState extends State<AccessScreen> {
       }
     } on AuthException catch (error) {
       if (mounted) setState(() => _message = error.message);
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _message = error.userMessage);
     }
   }
 
@@ -536,7 +538,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await widget.auth.signOut();
       if (mounted) Navigator.of(context).pop(true);
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     } on AuthException catch (error) {
       if (mounted) _notice(context, error.message);
     } finally {
@@ -713,7 +715,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
       if (mounted) Navigator.of(context).pop(profile);
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -845,7 +847,7 @@ class _MainShellState extends State<MainShell> {
     } on ApiException catch (error) {
       if (!mounted) return;
       setState(() {
-        _apiError = error.message;
+        _apiError = error.userMessage;
         _loading = false;
       });
     }
@@ -1288,7 +1290,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       if (mounted) {
         setState(() {
           _searching = false;
-          _searchError = error.message;
+          _searchError = error.userMessage;
         });
       }
     }
@@ -1326,7 +1328,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       );
       if (mounted) Navigator.of(context).pop(true);
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1620,7 +1622,9 @@ class ReservationsScreen extends StatelessWidget {
                           await api.cancelReserva(reservation.id);
                           await onRefresh();
                         } on ApiException catch (error) {
-                          if (context.mounted) _notice(context, error.message);
+                          if (context.mounted) {
+                            _notice(context, error.userMessage);
+                          }
                         }
                       },
                     ),
@@ -1831,7 +1835,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       if (mounted) Navigator.of(context).pop(profile);
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1943,7 +1947,7 @@ class _AdminSedesScreenState extends State<AdminSedesScreen> {
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _loading = false);
-        _notice(context, error.message);
+        _notice(context, error.userMessage);
       }
     }
   }
@@ -2071,7 +2075,7 @@ class _ManageVenueScreenState extends State<ManageVenueScreen> {
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _loading = false);
-        _notice(context, error.message);
+        _notice(context, error.userMessage);
       }
     }
   }
@@ -2108,7 +2112,7 @@ class _ManageVenueScreenState extends State<ManageVenueScreen> {
       await widget.api.deleteSede(widget.sede.id);
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     }
   }
 
@@ -2124,7 +2128,7 @@ class _ManageVenueScreenState extends State<ManageVenueScreen> {
       await _load();
       await widget.onChanged();
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     }
   }
 
@@ -2264,7 +2268,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
       }
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -2383,7 +2387,7 @@ class _AddSpaceDialogState extends State<_AddSpaceDialog> {
       }
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (error) {
-      if (mounted) _notice(context, error.message);
+      if (mounted) _notice(context, error.userMessage);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

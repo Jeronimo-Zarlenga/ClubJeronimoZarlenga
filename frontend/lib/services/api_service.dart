@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -7,8 +9,8 @@ class ApiService {
     : _client = client ?? http.Client();
 
   static const baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
+      'API_BASE_URL',
+      defaultValue: 'https://clubjeronimozarlenga.onrender.com',
   );
 
   final http.Client _client;
@@ -261,18 +263,34 @@ class ApiService {
         final detail = decoded is Map<String, dynamic>
             ? decoded['detail']?.toString()
             : null;
+        final isServerFailure = response.statusCode == 500 ||
+            response.statusCode == 503;
         throw ApiException(
           detail ?? 'El servidor respondió con estado ${response.statusCode}.',
           statusCode: response.statusCode,
+          isServerFailure: isServerFailure,
         );
       }
       return decoded;
     } on ApiException {
       rethrow;
+    } on SocketException {
+      throw const ApiException(
+        'Sin conexión a internet. Verificá tu conexión y volvé a intentar.',
+        isNetworkFailure: true,
+      );
+    } on TimeoutException {
+      throw const ApiException(
+        'La solicitud al servidor tomó demasiado tiempo. Inténtalo nuevamente.',
+        isNetworkFailure: true,
+      );
+    } on http.ClientException {
+      throw const ApiException(
+        'No se pudo conectar con el servidor. Inténtalo nuevamente.',
+        isNetworkFailure: true,
+      );
     } on FormatException {
       throw const ApiException('El servidor devolvió una respuesta inválida.');
-    } catch (error) {
-      throw ApiException('No se pudo conectar con el servidor: $error');
     }
   }
 
@@ -383,10 +401,25 @@ class Reserva {
 }
 
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode});
+  const ApiException(
+    this.message, {
+    this.statusCode,
+    this.isNetworkFailure = false,
+    this.isServerFailure = false,
+  });
 
   final String message;
   final int? statusCode;
+  final bool isNetworkFailure;
+  final bool isServerFailure;
+
+  String get userMessage {
+    if (isNetworkFailure) return message;
+    if (isServerFailure) {
+      return 'No se pudo conectar con el servidor. Inténtalo nuevamente más tarde.';
+    }
+    return message;
+  }
 
   @override
   String toString() => message;
